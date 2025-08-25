@@ -387,24 +387,28 @@ body {
 
 
 
+
+
 .preview-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 90px);
+  display: flex;
+  flex-wrap: wrap;
   gap: 12px;
-  width: max-content;
-  max-width: 100%;
-  align-items: start;
+  width: 100%;
   box-sizing: border-box;
   justify-content: flex-start;
 }
 
 .preview-card {
-  width: 100%;
-  height: auto;
+  width: 90px;
+  height: 120px;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   transition: var(--transition);
   cursor: pointer;
+  object-fit: cover;
+  background: #fff;
+  border: 1.5px solid #e1e5e9;
+  margin: 0;
 }
 
 .preview-card:hover {
@@ -983,7 +987,7 @@ function updatePreview() {
       img.src = `https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/pocket/${pathPrefix}/${id}_EN_SM.webp`;
       img.alt = card.name;
       img.title = `${card.id} ${card.name}`;
-      img.className = "preview-card";
+  img.className = "preview-card";
   img.style.width = "90px";
   img.style.height = "120px";
       img.style.objectFit = "cover";
