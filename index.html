@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>宝可梦卡牌生成器</title>
+<style>
+body { font-family: Arial; margin:20px; display:flex; gap:20px; }
+.left { flex:3; overflow-y:auto; }
+.right { flex:1; max-width:25%; }
+h1 { font-size:20px; margin-bottom:15px; }
+label { font-size:14px; margin-right:5px; }
+input[type=text] { padding:4px; font-size:14px; width:150px; }
+.set-selector { margin-bottom: 15px; }
+.set-button { padding:6px 12px; margin:3px; border-radius:6px; border:1px solid #888; background:#e0e0e0; cursor:pointer; font-size:13px; }
+.set-button.selected { background:#2196F3; color:white; }
+.button-container { display:flex; flex-wrap:wrap; gap:6px; margin:10px 0; }
+.card-button { padding:6px 10px; border-radius:6px; border:1px solid #888; background:#f0f0f0; cursor:pointer; font-size:13px; width:120px; text-align:center; flex-shrink:0; }
+.card-button.selected { background:#4CAF50; color:white; }
+.card-button.hidden { display:none; }
+textarea { width:100%; height:100px; margin-top:10px; font-size:14px; padding:5px; }
+.preview { border:1px solid #ccc; padding:10px; background:#fafafa; }
+.preview h3 { font-size:14px; margin-top:0; margin-bottom:10px; }
+.preview img { width:90px; height:auto; margin:4px; border:1px solid #ddd; object-fit:contain; }
+.action-buttons { margin-top:10px; }
+.action-buttons button { margin-right:8px; padding:5px 10px; font-size:13px; border-radius:6px; border:1px solid #888; background:#f0f0f0; cursor:pointer; }
+.history { margin-top:15px; }
+.history-item { margin-bottom:5px; font-size:13px; cursor:pointer; }
+.card-type { font-size: 12px; color: #666; }
+.ex-card { border-left: 3px solid #ff6b35; }
+.trainer-card { border-left: 3px solid #4a90e2; }
+.rainbow-card { border-left: 3px solid #9b59b6; }
+</style>
+</head>
+<body>
+<div class="left">
+  <h1>宝可梦卡牌生成器</h1>
+
+  <div style="margin-bottom:10px;">
+    <label for="idInput">ID:</label>
+    <input id="idInput" type="text">
+    <label for="nameInput" style="margin-left:10px;">姓名/时间戳:</label>
+    <input id="nameInput" type="text">
+  </div>
+
+  <div class="set-selector">
+    <label>选择SET:</label>
+    <div id="setButtons"></div>
+  </div>
+
+  <div class="action-buttons">
+    <button onclick="selectAll()">全选</button>
+    <button onclick="deselectAll()">全不选</button>
+    <button onclick="invertSelection()">反选</button>
+    <button onclick="selectByType('ex')">选择所有EX卡</button>
+    <button onclick="selectByType('trainer')">选择所有训练师</button>
+    <button onclick="selectByType('rainbow')">选择所有彩卡</button>
+  </div>
+
+  <div class="button-container" id="cardButtons"></div>
+
+  <div class="action-buttons">
+    <button onclick="generate()">生成</button>
+    <button onclick="copyText()">复制</button>
+    <button onclick="downloadText()">下载</button>
+  </div>
+
+  <textarea id="output" readonly></textarea>
+
+  <div class="history">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <h3 style="margin:0; font-size:14px;">历史记录</h3>
+      <div>
+        <input type="text" id="historySearch" placeholder="搜索历史..." style="padding:4px; font-size:12px;" oninput="filterHistory()">
+        <button style="padding:4px 8px; font-size:12px; border-radius:6px; border:1px solid #888; background:#f0f0f0; margin-left:5px;" onclick="clearHistory()">清空</button>
+      </div>
+    </div>
+    <div id="historyList"></div>
+  </div>
+</div>
+
+<div class="right preview">
+  <h3>已选卡牌预览</h3>
+  <div id="previewArea"></div>
+</div>
+
+<script>
+// 解析CSV数据
+const cardData = `A1_251,A1,妙蛙花ex,🌌⭐️⭐️
+A1_252,A1,椰蛋树ex,🌌⭐️⭐️
+A1_253,A1,喷火龙ex,🌌⭐️⭐️
+A1_254,A1,风速狗ex,🌌⭐️⭐️
+A1_255,A1,火焰鸟ex,🌌⭐️⭐️
+A1_256,A1,水箭龟ex,🌌⭐️⭐️
+A1_257,A1,宝石海星ex,🌌⭐️⭐️
+A1_258,A1,急冻鸟ex,🌌⭐️⭐️
+A1_259,A1,皮卡丘ex,🌌⭐️⭐️
+A1_260,A1,闪电鸟ex,🌌⭐️⭐️
+A1_261,A1,耿鬼ex,🌌⭐️⭐️
+A1_262,A1,超梦ex,🌌⭐️⭐️
+A1_263,A1,怪力ex,🌌⭐️⭐️
+A1_264,A1,嘎啦嘎啦ex,🌌⭐️⭐️
+A1_265,A1,胖可丁ex,🌌⭐️⭐️
+A1_266,A1,莉佳,🤡⭐️⭐
+A1_267,A1,小霞,🤡⭐️⭐
+A1_268,A1,夏伯,🤡⭐️⭐
+A1_269,A1,阿桔,🤡⭐️⭐
+A1_270,A1,坂木,🤡⭐️⭐
+A1_271,A1,小刚,🤡⭐️⭐
+A1_272,A1,娜姿,🤡⭐️⭐
+A1_273,A1,马志士,🤡⭐️⭐
+A1_274,A1,火焰鸟ex,🌈⭐️⭐️
+A1_275,A1,急冻鸟ex,🌈⭐️⭐️
+A1_276,A1,闪电鸟ex,🌈⭐️⭐️
+A1_277,A1,耿鬼ex,🌈⭐️⭐️
+A1_278,A1,怪力ex,🌈⭐️⭐️
+A1_279,A1,胖可丁ex,🌈⭐️⭐️
+A1a_075,A1a,时拉比ex,🌌⭐️⭐️
+A1a_076,A1a,暴鲤龙ex,🌌⭐️⭐️
+A1a_077,A1a,梦幻ex,🌌⭐️⭐️
+A1a_078,A1a,化石翼龙ex,🌌⭐️⭐️
+A1a_079,A1a,大比鸟ex,🌌⭐️⭐️
+A1a_080,A1a,新芽探险家,🤡⭐️⭐
+A1a_081,A1a,青绿,🤡⭐️⭐
+A1a_082,A1a,叶子,🤡⭐️⭐
+A1a_083,A1a,梦幻ex,🌈⭐️⭐️
+A1a_084,A1a,化石翼龙ex,🌈⭐️⭐️
+A2_180,A2,远古巨蜓ex,🌌⭐️⭐️
+A2_181,A2,烈焰猴ex,🌌⭐️⭐️
+A2_182,A2,帕路奇亚ex,🌌⭐️⭐️
+A2_183,A2,帕奇利兹ex,🌌⭐️⭐️
+A2_184,A2,梦妖魔ex,🌌⭐️⭐️
+A2_185,A2,艾路雷朵ex,🌌⭐️⭐️
+A2_186,A2,玛狃拉ex,🌌⭐️⭐️
+A2_187,A2,达克莱伊ex,🌌⭐️⭐️
+A2_188,A2,帝牙卢卡ex,🌌⭐️⭐️
+A2_189,A2,大舌舔ex,🌌⭐️⭐️
+A2_190,A2,赤日,🤡⭐️⭐
+A2_191,A2,银河队手下,🤡⭐️⭐
+A2_192,A2,竹兰,🤡⭐️⭐
+A2_193,A2,电次,🤡⭐️⭐
+A2_194,A2,小光,🤡⭐️⭐
+A2_195,A2,火星,🤡⭐️⭐
+A2_196,A2,远古巨蜓ex,🌈⭐️⭐️
+A2_197,A2,烈焰猴ex,🌈⭐️⭐️
+A2_198,A2,帕奇利兹ex,🌈⭐️⭐️
+A2_199,A2,梦妖魔ex,🌈⭐️⭐️
+A2_200,A2,艾路雷朵ex,🌈⭐️⭐️
+A2_201,A2,玛狃拉ex,🌈⭐️⭐️
+A2_202,A2,达克莱伊ex,🌈⭐️⭐️
+A2_203,A2,大舌舔ex,🌈⭐️⭐️
+A2a_082,A2a,叶伊布ex,🌌⭐️⭐️
+A2a_083,A2a,冰伊布ex,🌌⭐️⭐️
+A2a_084,A2a,烈咬陆鲨ex,🌌⭐️⭐️
+A2a_085,A2a,大朝北鼻ex,🌌⭐️⭐️
+A2a_086,A2a,阿尔宙斯ex,🌌⭐️⭐️
+A2a_087,A2a,珠贝,🤡⭐️⭐
+A2a_088,A2a,神和镇长老,🤡⭐️⭐
+A2a_089,A2a,阿驯,🤡⭐️⭐
+A2a_090,A2a,刚石,🤡⭐️⭐
+A2a_091,A2a,叶伊布ex,🌈⭐️⭐️
+A2a_092,A2a,冰伊布ex,🌈⭐️⭐️
+A2a_093,A2a,烈咬陆鲨ex,🌈⭐️⭐️
+A2a_094,A2a,大朝北鼻ex,🌈⭐️⭐️
+A2b_079,A2b,大针蜂ex,🌌⭐️⭐️
+A2b_080,A2b,喷火龙ex,🌌⭐️⭐️
+A2b_081,A2b,三海地鼠ex,🌌⭐️⭐️
+A2b_082,A2b,皮卡丘ex,🌌⭐️⭐️
+A2b_083,A2b,骑拉帝纳ex,🌌⭐️⭐️
+A2b_084,A2b,路卡利欧ex,🌌⭐️⭐️
+A2b_085,A2b,帕底亚土王ex,🌌⭐️⭐️
+A2b_086,A2b,巨锻匠ex,🌌⭐️⭐️
+A2b_087,A2b,大尾狸ex,🌌⭐️⭐️
+A2b_088,A2b,奇树,🤡⭐️⭐
+A2b_089,A2b,宝可梦中心小姐,🤡⭐️⭐
+A2b_090,A2b,赤红,🤡⭐️⭐
+A2b_091,A2b,火箭队小兵,🤡⭐️⭐
+A2b_092,A2b,皮卡丘ex,🌈⭐️⭐️
+A2b_093,A2b,帕底亚土王ex,🌈⭐️⭐️
+A2b_094,A2b,巨锻匠ex,🌈⭐️⭐️
+A2b_095,A2b,大尾狸ex,🌈⭐️⭐️
+A3_180,A3,狙射树枭ex,🌌⭐️⭐️
+A3_181,A3,破破舵轮ex,🌌⭐️⭐️
+A3_182,A3,炽焰咆哮虎ex,🌌⭐️⭐️
+A3_183,A3,好胜毛蟹ex,🌌⭐️⭐️
+A3_184,A3,弱丁鱼ex,🌌⭐️⭐️
+A3_185,A3,阿罗拉雷丘ex,🌌⭐️⭐️
+A3_186,A3,露奈雅拉ex,🌌⭐️⭐️
+A3_187,A3,投掷猴ex,🌌⭐️⭐️
+A3_188,A3,阿罗拉臭臭泥ex,🌌⭐️⭐️
+A3_189,A3,索尔迦雷欧ex,🌌⭐️⭐️
+A3_190,A3,阿塞罗拉,🤡⭐️⭐
+A3_191,A3,伊利马,🤡⭐️⭐
+A3_192,A3,卡奇,🤡⭐️⭐
+A3_193,A3,古兹马,🤡⭐️⭐
+A3_194,A3,水莲,🤡⭐️⭐
+A3_195,A3,马玛内,🤡⭐️⭐
+A3_196,A3,玛奥,🤡⭐️⭐
+A3_197,A3,莉莉艾,🤡⭐️⭐
+A3_198,A3,狙射树枭ex,🌈⭐️⭐️
+A3_199,A3,破破舵轮ex,🌈⭐️⭐️
+A3_200,A3,炽焰咆哮虎ex,🌈⭐️⭐️
+A3_201,A3,好胜毛蟹ex,🌈⭐️⭐️
+A3_202,A3,弱丁鱼ex,🌈⭐️⭐️
+A3_203,A3,阿罗拉雷丘ex,🌈⭐️⭐️
+A3_204,A3,露奈雅拉ex,🌈⭐️⭐️
+A3_205,A3,投掷猴ex,🌈⭐️⭐️
+A3_206,A3,阿罗拉臭臭泥ex,🌈⭐️⭐️
+A3_207,A3,索尔迦雷欧ex,🌈⭐️⭐️
+A3a_076,A3a,爆肌蚊ex,🌌⭐️⭐️
+A3a_077,A3a,卡璞・鸣鸣ex,🌌⭐️⭐️
+A3a_078,A3a,鬃岩狼人ex,🌌⭐️⭐️
+A3a_079,A3a,恶食大王ex,🌌⭐️⭐️
+A3a_080,A3a,阿罗拉三地鼠ex,🌌⭐️⭐️
+A3a_081,A3a,格拉吉欧,🤡⭐️⭐
+A3a_082,A3a,帅哥,🤡⭐️⭐
+A3a_083,A3a,露莎米奈,🤡⭐️⭐
+A3a_084,A3a,卡璞・鸣鸣ex,🌈⭐️⭐️
+A3a_085,A3a,鬃岩狼人ex,🌈⭐️⭐️
+A3a_086,A3a,恶食大王ex,🌈⭐️⭐️
+A3a_087,A3a,阿罗拉三地鼠ex,🌈⭐️⭐️
+A3b_079,A3b,火伊布ex,🌌⭐️⭐️
+A3b_080,A3b,西狮海壬ex,🌌⭐️⭐️
+A3b_081,A3b,仙子伊布ex,🌌⭐️⭐️
+A3b_082,A3b,快龙ex,🌌⭐️⭐️
+A3b_083,A3b,伊布ex,🌌⭐️⭐️
+A3b_084,A3b,卡比兽ex,🌌⭐️⭐️
+A3b_085,A3b,哈乌,🤡⭐️⭐
+A3b_086,A3b,牡丹,🤡⭐️⭐
+A3b_087,A3b,火伊布ex,🌈⭐️⭐️
+A3b_088,A3b,西狮海壬ex,🌈⭐️⭐️
+A3b_089,A3b,仙子伊布ex,🌈⭐️⭐️
+A3b_090,A3b,快龙ex,🌈⭐️⭐️
+A3b_091,A3b,卡比兽ex,🌈⭐️⭐️
+A4_186,A4,壶壶ex,🌌⭐️⭐️
+A4_187,A4,凤王ex,🌌⭐️⭐️
+A4_188,A4,刺龙王ex,🌌⭐️⭐️
+A4_189,A4,电灯怪ex,🌌⭐️⭐️
+A4_190,A4,太阳伊布ex,🌌⭐️⭐️
+A4_191,A4,顿甲ex,🌌⭐️⭐️
+A4_192,A4,叉字蝠ex,🌌⭐️⭐️
+A4_193,A4,月亮伊布ex,🌌⭐️⭐️
+A4_194,A4,盔甲鸟ex,🌌⭐️⭐️
+A4_195,A4,洛奇亚ex,🌌⭐️⭐️
+A4_196,A4,一树,🤡⭐️⭐
+A4_197,A4,琴音,🤡⭐️⭐
+A4_198,A4,银,🤡⭐️⭐
+A4_199,A4,钓鱼者,🤡⭐️⭐
+A4_200,A4,阿蜜,🤡⭐️⭐
+A4_201,A4,登山男,🤡⭐️⭐
+A4_202,A4,壶壶ex,🌈⭐️⭐️
+A4_203,A4,刺龙王ex,🌈⭐️⭐️
+A4_204,A4,电灯怪ex,🌈⭐️⭐️
+A4_205,A4,太阳伊布ex,🌈⭐️⭐️
+A4_206,A4,顿甲ex,🌈⭐️⭐️
+A4_207,A4,叉字蝠ex,🌈⭐️⭐️
+A4_208,A4,月亮伊布ex,🌈⭐️⭐️
+A4_209,A4,盔甲鸟ex,🌈⭐️⭐️`;
+
+// 解析卡牌数据
+const cards = [];
+const sets = new Set();
+cardData.split('\n').forEach(line => {
+  const [id, set, name, type] = line.split(',');
+  if (id && set && name && type) {
+    let cardType = 'normal';
+    let displayName = name;
+    
+    if (type.includes('🌈')) {
+      cardType = 'rainbow';
+      displayName = `（彩）${name}`;
+    } else if (type.includes('🤡')) {
+      cardType = 'trainer';
+    } else if (name.includes('ex')) {
+      cardType = 'ex';
+    }
+    
+    cards.push({
+      id,
+      set,
+      name: displayName,
+      originalName: name,
+      type: cardType,
+      emoji: type
+    });
+    sets.add(set);
+  }
+});
+
+// 按SET排序
+const sortedSets = Array.from(sets).sort();
+
+const selectedCards = new Set();
+const selectedSets = new Set(['A4']); // 默认选择A4
+const history = [];
+
+const setButtonsDiv = document.getElementById("setButtons");
+const cardButtonsDiv = document.getElementById("cardButtons");
+const previewArea = document.getElementById("previewArea");
+const output = document.getElementById("output");
+const historyList = document.getElementById("historyList");
+
+// 初始化SET按钮
+sortedSets.forEach(set => {
+  const btn = document.createElement("button");
+  btn.textContent = set;
+  btn.className = "set-button";
+  if (selectedSets.has(set)) {
+    btn.classList.add("selected");
+  }
+  btn.onclick = () => toggleSet(set, btn);
+  setButtonsDiv.appendChild(btn);
+});
+
+// 初始化卡牌按钮
+cards.forEach(card => {
+  const btn = document.createElement("button");
+  btn.textContent = `${card.id} ${card.name}`;
+  btn.className = `card-button ${card.type}-card`;
+  btn.dataset.set = card.set;
+  btn.dataset.type = card.type;
+  btn.onclick = () => toggleCard(card, btn);
+  
+  // 添加类型标识
+  const typeSpan = document.createElement("div");
+  typeSpan.className = "card-type";
+  typeSpan.textContent = card.emoji;
+  btn.appendChild(typeSpan);
+  
+  cardButtonsDiv.appendChild(btn);
+});
+
+// 初始显示
+filterCardsBySet();
+
+function toggleSet(set, btn) {
+  if(selectedSets.has(set)){
+    selectedSets.delete(set);
+    btn.classList.remove("selected");
+  } else {
+    selectedSets.add(set);
+    btn.classList.add("selected");
+  }
+  filterCardsBySet();
+  updatePreview();
+}
+
+function filterCardsBySet() {
+  const cardButtons = document.querySelectorAll(".card-button");
+  cardButtons.forEach(btn => {
+    const cardSet = btn.dataset.set;
+    if (selectedSets.has(cardSet)) {
+      btn.classList.remove("hidden");
+    } else {
+      btn.classList.add("hidden");
+      btn.classList.remove("selected");
+      // 从选中卡牌中移除
+      const cardId = btn.textContent.split(' ')[0];
+      selectedCards.delete(cardId);
+    }
+  });
+}
+
+function toggleCard(card, btn) {
+  if(selectedCards.has(card.id)){
+    selectedCards.delete(card.id);
+    btn.classList.remove("selected");
+  } else {
+    selectedCards.add(card.id);
+    btn.classList.add("selected");
+  }
+  updatePreview();
+}
+
+function updatePreview() {
+  previewArea.innerHTML="";
+  selectedCards.forEach(id=>{
+    const card = cards.find(c=>c.id===id);
+    if (card) {
+      const img=document.createElement("img");
+      // 使用卡牌ID的前缀作为路径，例如 A1_251 -> A1
+      const pathPrefix = id.split('_')[0];
+      img.src=`https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/pocket/${pathPrefix}/${id}_EN_SM.webp`;
+      img.alt=card.name;
+      img.title=`${card.id} ${card.name}`;
+      img.onerror=()=>{img.src="https://via.placeholder.com/90x120?text=无图";};
+      previewArea.appendChild(img);
+    }
+  });
+}
+
+function selectAll(){
+  selectedCards.clear();
+  document.querySelectorAll(".card-button:not(.hidden)").forEach(btn => {
+    const cardId = btn.textContent.split(' ')[0];
+    selectedCards.add(cardId);
+    btn.classList.add("selected");
+  });
+  updatePreview();
+}
+
+function deselectAll(){
+  selectedCards.clear();
+  document.querySelectorAll(".card-button").forEach(btn=>btn.classList.remove("selected"));
+  updatePreview();
+}
+
+function invertSelection(){
+  const newSelection = new Set();
+  document.querySelectorAll(".card-button:not(.hidden)").forEach(btn => {
+    const cardId = btn.textContent.split(' ')[0];
+    if(selectedCards.has(cardId)){
+      btn.classList.remove("selected");
+    } else {
+      newSelection.add(cardId);
+      btn.classList.add("selected");
+    }
+  });
+  selectedCards.clear();
+  newSelection.forEach(id=>selectedCards.add(id));
+  updatePreview();
+}
+
+function selectByType(type) {
+  document.querySelectorAll(`.card-button:not(.hidden)[data-type="${type}"]`).forEach(btn => {
+    const cardId = btn.textContent.split(' ')[0];
+    selectedCards.add(cardId);
+    btn.classList.add("selected");
+  });
+  updatePreview();
+}
+
+function generate(){
+  const id = document.getElementById("idInput").value.trim();
+  const name = document.getElementById("nameInput").value.trim();
+  if(!id||!name){ alert("请填写ID和姓名/时间戳"); return;}
+  const text = `/添加老板 ${id} ${name} ${Array.from(selectedCards).join("|")}`;
+  output.value=text;
+
+  const now=new Date();
+  const timestamp=now.getFullYear()+"-"+(now.getMonth()+1).toString().padStart(2,"0")+"-"+now.getDate().toString().padStart(2,"0")+" "+now.getHours().toString().padStart(2,"0")+":"+now.getMinutes().toString().padStart(2,"0");
+
+  const record={text,id,name,cards:[...selectedCards],sets:[...selectedSets],timestamp};
+  history.push(record);
+  updateHistory();
+}
+
+function copyText(){
+  output.select();
+  document.execCommand("copy");
+  alert("已复制");
+}
+
+function downloadText(){
+  const blob = new Blob([output.value],{type:"text/plain"});
+  const link=document.createElement("a");
+  link.href=URL.createObjectURL(blob);
+  link.download="生成结果.txt";
+  link.click();
+}
+
+function updateHistory(){
+  historyList.innerHTML="";
+  history.forEach(item=>{
+    const div=document.createElement("div");
+    div.className="history-item";
+    const setsInfo = item.sets ? ` [${item.sets.join(',')}]` : '';
+    div.innerHTML=`${item.text.replace(/\n/g," ")}${setsInfo} <span style="color:gray">(${item.timestamp})</span>`;
+    div.onclick=()=>{
+      document.getElementById("idInput").value=item.id;
+      document.getElementById("nameInput").value=item.name;
+      
+      // 恢复SET选择
+      selectedSets.clear();
+      if (item.sets) {
+        item.sets.forEach(set => selectedSets.add(set));
+      }
+      document.querySelectorAll(".set-button").forEach(btn => {
+        if(selectedSets.has(btn.textContent)) {
+          btn.classList.add("selected");
+        } else {
+          btn.classList.remove("selected");
+        }
+      });
+      
+      // 过滤卡牌显示
+      filterCardsBySet();
+      
+      // 恢复卡牌选择
+      selectedCards.clear();
+      item.cards.forEach(id=>selectedCards.add(id));
+      document.querySelectorAll(".card-button").forEach(btn => {
+        const cardId = btn.textContent.split(' ')[0];
+        if(selectedCards.has(cardId)) {
+          btn.classList.add("selected");
+        } else {
+          btn.classList.remove("selected");
+        }
+      });
+      updatePreview();
+      output.value=item.text;
+    };
+    historyList.appendChild(div);
+  });
+}
+
+function filterHistory(){
+  const keyword=document.getElementById("historySearch").value.trim();
+  historyList.innerHTML="";
+  history.filter(item=>item.text.includes(keyword)||item.id.includes(keyword)||item.name.includes(keyword)).forEach(item=>{
+    const div=document.createElement("div");
+    div.className="history-item";
+    const setsInfo = item.sets ? ` [${item.sets.join(',')}]` : '';
+    div.innerHTML=`${item.text.replace(/\n/g," ")}${setsInfo} <span style="color:gray">(${item.timestamp})</span>`;
+    div.onclick=()=>{
+      document.getElementById("idInput").value=item.id;
+      document.getElementById("nameInput").value=item.name;
+      
+      // 恢复SET选择
+      selectedSets.clear();
+      if (item.sets) {
+        item.sets.forEach(set => selectedSets.add(set));
+      }
+      document.querySelectorAll(".set-button").forEach(btn => {
+        if(selectedSets.has(btn.textContent)) {
+          btn.classList.add("selected");
+        } else {
+          btn.classList.remove("selected");
+        }
+      });
+      
+      // 过滤卡牌显示
+      filterCardsBySet();
+      
+      // 恢复卡牌选择
+      selectedCards.clear();
+      item.cards.forEach(id=>selectedCards.add(id));
+      document.querySelectorAll(".card-button").forEach(btn => {
+        const cardId = btn.textContent.split(' ')[0];
+        if(selectedCards.has(cardId)) {
+          btn.classList.add("selected");
+        } else {
+          btn.classList.remove("selected");
+        }
+      });
+      updatePreview();
+      output.value=item.text;
+    };
+    historyList.appendChild(div);
+  });
+}
+
+function clearHistory(){
+  if(confirm("确定清空历史记录吗？")){
+    history.length=0;
+    updateHistory();
+  }
+}
+</script>
+</body>
+</html>
