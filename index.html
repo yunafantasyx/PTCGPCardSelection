@@ -219,10 +219,11 @@ body {
 .type-button.rainbow { background: linear-gradient(135deg, var(--psychic), var(--electric), var(--water)); }
 
 
+
 .card-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 10px;
   margin-bottom: 16px;
   padding: 8px;
   background: rgba(0, 0, 0, 0.02);
@@ -231,21 +232,51 @@ body {
   overflow-y: visible;
 }
 
+
 .card-button {
-  padding: 12px;
-  border-radius: 12px;
+  padding: 10px 6px 10px 6px;
+  border-radius: 10px;
   border: 2px solid #e1e5e9;
   background: white;
   cursor: pointer;
   transition: var(--transition);
   text-align: center;
-  font-size: 0.85rem;
+  font-size: 0.92rem;
   position: relative;
   overflow: hidden;
-  min-height: 80px;
+  min-height: 54px;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(59,89,152,0.04);
+  border-bottom: 3px solid #e1e5e9;
+}
+
+.card-button span {
+  display: block;
+  width: 100%;
+  word-break: break-all;
+}
+
+.card-button .card-type {
+  margin-top: 2px;
+  font-size: 1.1rem;
+}
+
+.card-button.selected {
+  background: linear-gradient(135deg, #4CAF50 60%, #45a049 100%);
+  color: white;
+  border-color: #4CAF50;
+  box-shadow: 0 4px 16px rgba(76,175,80,0.13);
+  border-bottom: 3px solid #388e3c;
+}
+
+.card-button:hover {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 6px 18px rgba(59,89,152,0.13);
+  border-color: var(--pokemon-blue);
+  z-index: 2;
 }
 
 .card-button:hover {
