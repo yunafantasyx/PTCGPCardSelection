@@ -359,12 +359,17 @@ body {
   max-height: 500px;
 }
 
+
 .preview-content {
-  max-height: 400px;
-  overflow-y: auto;
-  padding: 8px;
+  min-height: 120px;
+  max-height: none;
+  overflow: visible;
+  padding: 12px 8px 12px 8px;
   background: rgba(0, 0, 0, 0.02);
   border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
 }
 
 .preview-content::-webkit-scrollbar {
@@ -381,10 +386,14 @@ body {
   border-radius: 3px;
 }
 
+
 .preview-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
-  gap: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: flex-start;
+  align-items: flex-start;
+  width: 100%;
 }
 
 .preview-card {
@@ -957,11 +966,13 @@ function toggleCard(card, btn) {
 function updatePreview() {
   previewArea.innerHTML = "";
   if (selectedCards.size === 0) {
-      emptyPreview.style.display = 'block';
-      return;
+    emptyPreview.style.display = 'block';
+    previewArea.style.display = 'none';
+    return;
   }
-  
   emptyPreview.style.display = 'none';
+  previewArea.style.display = 'flex';
+  previewArea.innerHTML = "";
   selectedCards.forEach(id => {
     const card = cards.find(c => c.id === id);
     if (card) {
@@ -971,6 +982,13 @@ function updatePreview() {
       img.alt = card.name;
       img.title = `${card.id} ${card.name}`;
       img.className = "preview-card";
+      img.style.width = "90px";
+      img.style.height = "120px";
+      img.style.objectFit = "cover";
+      img.style.background = "#fff";
+      img.style.border = "1.5px solid #e1e5e9";
+      img.style.boxShadow = "0 2px 8px rgba(59,89,152,0.08)";
+      img.style.margin = "0";
       img.onerror = () => { img.src = "https://via.placeholder.com/90x120?text=无图"; };
       previewArea.appendChild(img);
     }
@@ -1009,11 +1027,12 @@ function invertSelection() {
 }
 
 function selectByType(type) {
-  deselectAll();
   document.querySelectorAll(`.card-button:not(.hidden)[data-type="${type}"]`).forEach(btn => {
     const cardId = btn.dataset.cardId;
-    selectedCards.add(cardId);
-    btn.classList.add("selected");
+    if (!selectedCards.has(cardId)) {
+      selectedCards.add(cardId);
+      btn.classList.add("selected");
+    }
   });
   updatePreview();
 }
