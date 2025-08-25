@@ -594,7 +594,7 @@ body {
         <button class="btn action-button" onclick="selectAll()">🔥 全选</button>
         <button class="btn action-button" onclick="deselectAll()">❌ 全不选</button>
         <button class="btn action-button" onclick="invertSelection()">🔄 反选</button>
-        <button class="btn type-button ex" onclick="selectByType('ex')">⭐ 选择所有EX卡</button>
+        <button class="btn type-button ex" onclick="selectByType('ex')">⭐ 选择所有黑边卡</button>
         <button class="btn type-button trainer" onclick="selectByType('trainer')">🤡 选择所有训练师</button>
         <button class="btn type-button rainbow" onclick="selectByType('rainbow')">🌈 选择所有彩卡</button>
       </div>
@@ -843,7 +843,7 @@ cardData.split('\n').forEach(line => {
 const sortedSets = Array.from(sets).sort();
 const selectedCards = new Set();
 let history = JSON.parse(localStorage.getItem('pokemonCardHistory')) || [];
-const selectedSets = new Set([sortedSets[0] || '']); // 默认选择第一个SET
+const selectedSets = new Set([sortedSets[sortedSets.length - 1] || '']); // 默认选择最后一个SET
 
 // DOM 元素
 const setButtonsDiv = document.getElementById("setButtons");
