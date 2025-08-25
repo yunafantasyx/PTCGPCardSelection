@@ -386,14 +386,16 @@ body {
 
 
 
+
 .preview-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
-  max-width: 384px;
+  grid-template-columns: repeat(4, 90px);
   gap: 12px;
-  width: 100%;
+  width: max-content;
+  max-width: 100%;
   align-items: start;
   box-sizing: border-box;
+  justify-content: flex-start;
 }
 
 .preview-card {
@@ -982,8 +984,8 @@ function updatePreview() {
       img.alt = card.name;
       img.title = `${card.id} ${card.name}`;
       img.className = "preview-card";
-      img.style.width = "90px";
-      img.style.height = "120px";
+  img.style.width = "90px";
+  img.style.height = "120px";
       img.style.objectFit = "cover";
       img.style.background = "#fff";
       img.style.border = "1.5px solid #e1e5e9";
