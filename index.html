@@ -385,12 +385,15 @@ body {
 
 
 
+
 .preview-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+  max-width: 384px;
   gap: 12px;
   width: 100%;
   align-items: start;
+  box-sizing: border-box;
 }
 
 .preview-card {
@@ -985,7 +988,8 @@ function updatePreview() {
       img.style.background = "#fff";
       img.style.border = "1.5px solid #e1e5e9";
       img.style.boxShadow = "0 2px 8px rgba(59,89,152,0.08)";
-      img.style.margin = "0 auto";
+  img.style.margin = "0 auto";
+  img.style.maxWidth = "100%";
       img.onerror = () => { img.src = "https://via.placeholder.com/90x120?text=无图"; };
       previewArea.appendChild(img);
     }
