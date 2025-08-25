@@ -46,7 +46,7 @@ body {
   max-width: 1400px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: 1fr 320px;
+  grid-template-columns: 1fr 380px;
   gap: 24px;
 }
 
@@ -233,8 +233,9 @@ body {
   padding: 8px;
   background: rgba(0, 0, 0, 0.02);
   border-radius: 12px;
-  max-height: none;
-  overflow-y: visible;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: visible;
 }
 
 
@@ -358,6 +359,7 @@ body {
   position: sticky;
   top: 20px;
   align-self: start;
+  min-width: 320px;
 }
 
 .preview-panel {
@@ -369,14 +371,15 @@ body {
 
 .preview-content {
   min-height: 94px;
-  padding: 6px 2px 6px 2px;
+  padding: 12px;
   background: rgba(0, 0, 0, 0.02);
   border-radius: 12px;
-  display: block;
+  display: flex;
+  justify-content: center;
   box-sizing: border-box;
   width: 100%;
-  max-width: 296px;
-  margin: 0 auto;
+  overflow: visible;
+  min-width: 360px;
 }
 
 .preview-content::-webkit-scrollbar {
@@ -402,17 +405,17 @@ body {
 .preview-grid {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: 8px;
   width: 100%;
+  max-width: 360px;
   box-sizing: border-box;
+  margin: 0;
   justify-content: flex-start;
-  max-width: 288px;
-  margin: 0 auto;
 }
 
 .preview-card {
-  width: 70px;
-  height: 94px;
+  width: 85px;
+  height: 119px;
   border-radius: 6px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.13);
   transition: var(--transition);
@@ -421,6 +424,7 @@ body {
   background: #fff;
   border: 1px solid #e1e5e9;
   margin: 0;
+  flex: 0 0 85px;
 }
 
 .preview-card:hover {
