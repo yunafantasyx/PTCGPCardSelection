@@ -222,9 +222,6 @@ body {
 .type-button.ex { background: linear-gradient(135deg, var(--electric), #f1c40f); }
 .type-button.trainer { background: linear-gradient(135deg, var(--psychic), #e74c3c); color: white;}
 .type-button.rainbow { background: linear-gradient(135deg, var(--psychic), var(--electric), var(--water)); }
-
-
-
 .card-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
@@ -289,6 +286,7 @@ body {
   transform: translateY(-3px) scale(1.02);
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
   border-color: var(--pokemon-blue);
+  z-index: 2;
 }
 
 .card-button.selected {
@@ -297,6 +295,7 @@ body {
   border-color: #4CAF50;
   transform: translateY(-3px) scale(1.02);
   box-shadow: 0 8px 25px rgba(76, 175, 80, 0.3);
+  border-bottom: 3px solid #388e3c;
 }
 
 .card-button.hidden { display: none; }
@@ -367,8 +366,6 @@ body {
   height: auto;
 }
 
-
-
 .preview-content {
   min-height: 94px;
   padding: 12px;
@@ -395,12 +392,6 @@ body {
   background: linear-gradient(135deg, var(--pokemon-blue), var(--pokemon-red));
   border-radius: 3px;
 }
-
-
-
-
-
-
 
 .preview-grid {
   display: flex;
@@ -1001,27 +992,44 @@ function updatePreview() {
   emptyPreview.style.display = 'none';
   previewArea.style.display = 'flex';
   previewArea.innerHTML = "";
-  selectedCards.forEach(id => {
-    const card = cards.find(c => c.id === id);
-    if (card) {
+
+  // 获取所有选中的卡片并排序
+  const selectedCardsList = Array.from(selectedCards)
+    .map(id => cards.find(c => c.id === id))
+    .filter(card => card !== undefined)
+    .sort((a, b) => {
+      // 先按set排序
+      const setCompare = a.set.localeCompare(b.set);
+      if (setCompare !== 0) return setCompare;
+      
+      // 再按序号排序（提取数字部分进行比较）
+      const [aSet, aNum] = a.id.split('_');
+      const [bSet, bNum] = b.id.split('_');
+      const numCompare = parseInt(aNum) - parseInt(bNum);
+      if (numCompare !== 0) return numCompare;
+      
+      // 最后按原始名字排序
+      return a.originalName.localeCompare(b.originalName);
+    });
+
+  selectedCardsList.forEach(card => {
       const img = document.createElement("img");
-      const pathPrefix = id.split('_')[0];
-      img.src = `https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/pocket/${pathPrefix}/${id}_EN_SM.webp`;
+      const pathPrefix = card.id.split('_')[0];
+      img.src = `https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/pocket/${pathPrefix}/${card.id}_EN_SM.webp`;
       img.alt = card.name;
       img.title = `${card.id} ${card.name}`;
-  img.className = "preview-card";
-  img.style.width = "90px";
-  img.style.height = "120px";
+      img.className = "preview-card";
+      img.style.width = "90px";
+      img.style.height = "120px";
       img.style.objectFit = "cover";
       img.style.background = "#fff";
       img.style.border = "1.5px solid #e1e5e9";
       img.style.boxShadow = "0 2px 8px rgba(59,89,152,0.08)";
-  img.style.margin = "0 auto";
-  img.style.maxWidth = "100%";
+      img.style.margin = "0 auto";
+      img.style.maxWidth = "100%";
       img.onerror = () => { img.src = "https://via.placeholder.com/90x120?text=无图"; };
       previewArea.appendChild(img);
-    }
-  });
+    });
 }
 
 function selectAll() {
